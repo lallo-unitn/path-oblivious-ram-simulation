@@ -1,4 +1,6 @@
 from math import ceil, log2
+
+from oram.server.block import Block
 from oram.server.bucket import Bucket
 from oram.server.constants import Z_BUCKET_SIZE
 
@@ -28,8 +30,18 @@ class BucketTree():
         if height < 0:
             return None
         node = Bucket(max_size=z_max_size)
-        node.left = self.create_tree(height = height - 1, z_max_size=z_max_size, parent=node)
-        node.right = self.create_tree(height = height - 1, z_max_size=z_max_size, parent=node)
+        for _ in range(z_max_size):
+            node.add_block(Block(is_dummy=True))
+        node.left = self.create_tree(
+            height=height - 1,
+            z_max_size=z_max_size,
+            parent=node
+        )
+        node.right = self.create_tree(
+            height=height - 1,
+            z_max_size=z_max_size,
+            parent=node
+        )
         if node.left is not None:
             node.left.parent = node
         if node.right is not None:
@@ -41,6 +53,9 @@ class BucketTree():
             node = self.root
         # Print the current node with indentation
         print("    " * level + prefix + str(node))
+        # print block of the node
+        for block in node.get_blocks():
+            print("    " * (level) + str(block))
         # Recursively print the left and right subtrees
         if node.left is not None:
             self.print_tree(node.left, level + 1, prefix="L--- ")

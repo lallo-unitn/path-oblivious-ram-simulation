@@ -3,8 +3,6 @@ from oram.server.block import Block
 class Bucket():
 
     def __init__(self, max_size=0, parent=None, right=None, left=None, blocks=None):
-        if blocks is None:
-            blocks = []
         self.__is_init = False
         if max_size <= 0:
             raise ValueError("Bucket size must be greater than 0")
@@ -13,7 +11,10 @@ class Bucket():
         self.right = right
         self.left = left
         self.__max_size = max_size
-        self.__blocks = blocks
+        if blocks is None:
+            self.__blocks = []
+        else:
+            self.__blocks = blocks
 
     def get_block_by_index(self, index):
         if index < 0 or index >= len(self.__blocks):
@@ -59,11 +60,11 @@ if __name__ == "__main__":
 
     # Create a block with data [1, 2, 3, 4, 5]
     data = [1, 2, 3, 4, 5]
-    block = Block(0, 0, data)
+    block = Block(True, 0, data)
 
     # create second block
     data2 = [6, 7, 8, 9, 10]
-    block2 = Block(1, 1, data2)
+    block2 = Block(False, 1, data2)
 
     # Add the block to the bucket
     bucket.add_block(block)
