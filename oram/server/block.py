@@ -6,7 +6,7 @@ class Block:
             self.is_dummy = True
             self.data = []
             self._leaf_id = -1
-            self._id = -1
+            self.id = -1
         else:
             self.data = data
             self._leaf_id = leaf_id

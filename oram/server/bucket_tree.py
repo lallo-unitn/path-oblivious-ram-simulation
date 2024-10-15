@@ -23,9 +23,9 @@ class BucketTree():
 
     def get_bucket_from_path_and_level(self, node, level):
         path = self.path_to_root(node)
-        if level < 0 or level >= len(path):
+        if level < 0 or level > len(path):
             raise ValueError("Level out of bounds")
-        return path[level]
+        return path[len(path) - 1 - level]
 
     def create_tree(self, height, z_max_size=Z_BUCKET_SIZE, parent=None):
         self.root = self.create_tree_wrapped(self.height, z_max_size, parent)
@@ -67,6 +67,22 @@ class BucketTree():
             self.print_tree(node.left, level + 1, prefix="L--- ")
         if node.right is not None:
             self.print_tree(node.right, level + 1, prefix="R--- ")
+
+    def get_bucket_by_id(self, bucket_id):
+        return self.get_bucket_by_id_wrapped(self.root, bucket_id)
+
+    def get_bucket_by_id_wrapped(self, node, bucket_id):
+        if node is None:
+            return None
+        if node._id == bucket_id:
+            return node
+        left = self.get_bucket_by_id_wrapped(node.left, bucket_id)
+        if left is not None:
+            return left
+        right = self.get_bucket_by_id_wrapped(node.right, bucket_id)
+        if right is not None:
+            return right
+        return None
 
     def __assign_ids_inverted_bfs(self):
         if not self.root:
