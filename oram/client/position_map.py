@@ -24,10 +24,17 @@ class PositionMap:
         self.position[block_id] = new_leaf_index
         return new_leaf_index
 
+    def print_position_map(self):
+        for block_id, leaf_index in self.position.items():
+            print(f"Block ID: {block_id}, Leaf Index: {leaf_index}")
+
 if __name__ == "__main__":
-    position_map = PositionMap(16)
+    position_map = PositionMap(8)
     block_id = 1
     leaf_index = position_map.get_leaf_index(block_id)
     print(f"Block ID: {block_id}, Leaf Index: {leaf_index}")
+    position_map.print_position_map()
     new_leaf_index = position_map.update_position(block_id)
+    print(f"=====================================")
     print(f"Block ID: {block_id}, New Leaf Index: {new_leaf_index}")
+    position_map.print_position_map()

@@ -11,6 +11,7 @@ class Bucket():
         self.right = right
         self.left = left
         self.__max_size = max_size
+        self._id = None
         if blocks is None:
             self.__blocks = []
         else:
@@ -51,7 +52,7 @@ class Bucket():
         self.__is_init = False
 
     def __str__(self):
-        return f"Bucket(max_size={self.__max_size}, blocks={len(self.__blocks)})"
+        return f"Bucket(max_size={self.__max_size}, blocks={len(self.__blocks)}, id={self._id})"
 
 
 if __name__ == "__main__":

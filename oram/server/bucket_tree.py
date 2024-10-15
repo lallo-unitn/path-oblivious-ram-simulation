@@ -1,4 +1,6 @@
+from collections import deque
 from math import ceil, log2
+from venv import create
 
 from oram.server.block import Block
 from oram.server.bucket import Bucket
@@ -27,17 +29,22 @@ class BucketTree():
         return path[level]
 
     def create_tree(self, height, z_max_size=Z_BUCKET_SIZE, parent=None):
+        self.root = self.create_tree_wrapped(self.height, z_max_size, parent)
+        self.__assign_ids_inverted_bfs()
+        return self.root
+
+    def create_tree_wrapped(self, height, z_max_size=Z_BUCKET_SIZE, parent=None):
         if height < 0:
             return None
         node = Bucket(max_size=z_max_size)
         for _ in range(z_max_size):
             node.add_block(Block(is_dummy=True))
-        node.left = self.create_tree(
+        node.left = self.create_tree_wrapped(
             height=height - 1,
             z_max_size=z_max_size,
             parent=node
         )
-        node.right = self.create_tree(
+        node.right = self.create_tree_wrapped(
             height=height - 1,
             z_max_size=z_max_size,
             parent=node
@@ -61,6 +68,31 @@ class BucketTree():
             self.print_tree(node.left, level + 1, prefix="L--- ")
         if node.right is not None:
             self.print_tree(node.right, level + 1, prefix="R--- ")
+
+    def __assign_ids_inverted_bfs(self):
+        if not self.root:
+            return
+
+        # Perform a BFS traversal and collect nodes in a list
+        queue = deque([self.root])
+        nodes = []
+
+        while queue:
+            node = queue.popleft()
+            nodes.append(node)
+
+            # Add children to the queue for BFS
+            if node.left:
+                queue.append(node.left)
+            if node.right:
+                queue.append(node.right)
+
+        # Reverse the list for inverted BFS order
+        nodes.reverse()
+
+        # Assign IDs in reverse BFS order, starting from 0
+        for i, node in enumerate(nodes):
+            node._id = i  # Start IDs from 0
 
 if __name__ == "__main__":
     bucket_tree = BucketTree(8)
