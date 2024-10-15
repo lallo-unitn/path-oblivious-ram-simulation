@@ -1,5 +1,5 @@
 class Block:
-    _id = 0
+    _id = -1
 
     def __init__(self, is_dummy=True, leaf_id = -1, data=None):
         if is_dummy:

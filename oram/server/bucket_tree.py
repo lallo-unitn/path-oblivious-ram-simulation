@@ -1,18 +1,17 @@
 from collections import deque
 from math import ceil, log2
-from venv import create
 
 from oram.server.block import Block
 from oram.server.bucket import Bucket
-from oram.server.constants import Z_BUCKET_SIZE
+from oram.constants import Z_BUCKET_SIZE
 
 
 class BucketTree():
 
-    def __init__(self, N_block_number):
-        if N_block_number <= 0:
+    def __init__(self, n_block_number):
+        if n_block_number <= 0:
             raise ValueError("Bucket size must be greater than 0")
-        self.height = ceil(log2(N_block_number))
+        self.height = ceil(log2(n_block_number))
         self.root = self.create_tree(self.height)
 
     def path_to_root(self, node):
