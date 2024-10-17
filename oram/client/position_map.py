@@ -1,12 +1,13 @@
 import random
 from math import ceil, log2
+from typing import Mapping
 
 
 class PositionMap:
     def __init__(self, n_block_number):
         self.height = ceil(log2(n_block_number))
         self.num_leaves = pow(2, self.height)
-        self.position = {}  # Maps block IDs to leaf indices
+        self.position : Mapping[int, int] = {} # block_id -> leaf_index
         self.__initialize_position_map(n_block_number)
 
     def __initialize_position_map(self, num_blocks):
@@ -28,6 +29,10 @@ class PositionMap:
         for block_id, leaf_index in self.position.items():
             print(f"Block ID: {block_id}, Leaf Index: {leaf_index}")
 
+    def __str__(self):
+        # print all the block ids and their leaf index
+        return f"PositionMap: {self.position}"
+
 if __name__ == "__main__":
     position_map = PositionMap(8)
     block_id = 1
@@ -36,5 +41,5 @@ if __name__ == "__main__":
     position_map.print_position_map()
     new_leaf_index = position_map.update_position(block_id)
     print(f"=====================================")
-    print(f"Block ID: {block_id}, New Leaf Index: {new_leaf_index}")
+    print(position_map)
     position_map.print_position_map()

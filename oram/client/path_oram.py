@@ -1,5 +1,12 @@
+import random as rand
+from typing import List, Dict
+
+from tqdm import tqdm
+from collections.abc import Mapping
 from oram.client.position_map import PositionMap
 from oram.constants import Z_BUCKET_SIZE, N_BLOCKS_NUMBER
+from oram.server.block import Block
+from oram.server.bucket import Bucket
 from oram.server.bucket_tree import BucketTree
 
 
@@ -11,77 +18,133 @@ class PathORAM():
         self.position_map = PositionMap(N_BLOCKS_NUMBER)
         self.bucket_tree = BucketTree(N_BLOCKS_NUMBER)
         self.l_tree_height = self.bucket_tree.height
-        self.stash = []
+        self.stash : Mapping[int, Block] = {}
+        self.stash_blocks_paths_to_root : Mapping[int, List[Bucket]] = {}
 
-    def access(self, block_id, write=False, new_data=None):
-        old_leaf_id = self.position_map.get_leaf_index(block_id)
-        old_leaf = self.bucket_tree.get_bucket_by_id(old_leaf_id)
+    def access(self, block_id, isWrite=False, new_data=None):
+        block_leaf_id : int = self.__remap_block(block_id)
+        self.__read_path_for_block_leaf(block_leaf_id)
+        read_block = self.stash.get(block_id)
+        if isWrite:
+            self.__update_block(block_id, new_data)
+        self.__write_path(block_leaf_id)
+        return read_block
+
+    def __remap_block(self, block_id):
+        block_leaf_id : int = self.position_map.get_leaf_index(block_id)
         self.position_map.update_position(block_id)
+        return block_leaf_id
 
-        # print height of the tree
-        print("L Tree Height:", self.l_tree_height)
+    def __read_path_for_block_leaf(self, block_leaf_id):
+        # get leaf from the block leaf id
+        bucket : Bucket = self.bucket_tree.leaf_map.get(block_leaf_id)
+        # climb tree to the root using for cycle
+        for j in range(self.l_tree_height):
+            for block in bucket.get_blocks():
+                if not block.is_dummy:
+                    # add the block to the stash
+                    self.stash[block.block_id] = block
+            bucket.do_empty()
+            if bucket.parent is None:
+                break
+            bucket = bucket.parent
 
-        for i in range(self.l_tree_height+1):
-            bucket = self.bucket_tree.get_bucket_from_path_and_level(old_leaf, i)
-            print("1 Bucket:", bucket)
-            self.stash.append(bucket.get_block_by_index(block_id))
-        # print all stash blocks
-        print("Stash:")
-        for block in self.stash:
-            print(block)
-        stash_data = self.stash[block_id]
-        if write:
-            # update the data in the block
-            self.stash[block_id].data = new_data
+    def __update_block(self, block_id, new_data):
+        # create a new block with the new data
+        new_block = Block(is_dummy=False, data=new_data, block_id=block_id)
+        # update the block in the stash
+        self.stash[block_id] = new_block
 
-        temp_stash = []
+    def __write_path(self, block_leaf_id):
+        # get leaf node from the block leaf id
+        bucket : Bucket = self.bucket_tree.leaf_map.get(block_leaf_id)
+        temp_stash: Mapping[int, Block] = {}
+        second_temp_stash: Mapping[int, Block] = {}
+        # climb the tree to the root
+        for j in range(self.l_tree_height, 0, -1):
 
-        # iterate from l_tree_height to 0
-        for i in range(self.l_tree_height, 0, -1):
-            stash_block = self.stash[-1]
-            print("Old leaf:", old_leaf)
-            bucket_level_i_old_leaf = self.bucket_tree.get_bucket_from_path_and_level(old_leaf, i)
+            # put in temp_stash the blocks that can be written at the level from the stash
+            for block_id, block in self.stash.items():
+                temp_block_leaf_id = self.position_map.get_leaf_index(block_id)
+                if self.__check_path_intersection(bucket, temp_block_leaf_id, j):
+                    temp_stash[block_id] = block
 
-            print("Stash block:", stash_block)
-            stash_block_leaf_id = self.position_map.get_leaf_index(stash_block.id)
-            print("Stash block leaf ID:", stash_block_leaf_id)
-            stash_block_leaf = self.bucket_tree.get_bucket_by_id(stash_block_leaf_id)
-            print("stash_block_leaf:", stash_block_leaf)
-            bucket_level_i_stash_block_leaf = self.bucket_tree.get_bucket_from_path_and_level(stash_block_leaf, i)
+            min_size = min(self.z_bucket_size, len(temp_stash))
+            # randomly sample the blocks ids if more than the bucket capacity
+            sampled_blocks : List[int] = rand.sample(list(temp_stash.keys()), min_size)
 
-            if bucket_level_i_old_leaf == bucket_level_i_stash_block_leaf:
-                temp_stash.append(stash_block)
+            for block_id in sampled_blocks:
+                second_temp_stash[block_id] = temp_stash[block_id]
 
-            nr_blocks_to_insert = min(self.z_bucket_size, len(temp_stash))
-            # store in temp_stash the last nr_blocks_to_insert blocks
-            temp_stash = temp_stash[:nr_blocks_to_insert]
-            # remove the last nr_blocks_to_insert blocks from stash_copy
-            self.stash = self.stash[:-nr_blocks_to_insert]
+            # write the blocks to the bucket
+            self.__write_bucket(bucket, second_temp_stash)
+            # remove the blocks from the stash
+            temp_stash = {}
+            second_temp_stash = {}
+            bucket = bucket.parent
 
-            # add the last nr_blocks_to_insert blocks to the bucket
-            for block in temp_stash:
-                bucket_level_i_old_leaf.add_block(block)
-            temp_stash = []
-        return stash_data
+
+    def __check_path_intersection(self, bucket, temp_block_leaf_id, level):
+        temp_bucket : Bucket = self.bucket_tree.get_bucket_from_leaf_and_level(temp_block_leaf_id, level)
+        return bucket == temp_bucket
+
+    def __write_bucket(self, bucket : Bucket, temp_stash):
+        # add the blocks from the temp stash to the bucket
+        for block in temp_stash.values():
+            try:
+                bucket.add_block(block)
+            except ValueError:
+                break
+            # Remove the block from the stash
+            self.stash.pop(block.block_id)
+
 
 if __name__ == "__main__":
     path_oram = PathORAM()
-    print("Path ORAM initialized")
-    print("Position Map:")
-    path_oram.position_map.print_position_map()
-    print("Bucket Tree:")
-    path_oram.bucket_tree.print_tree()
-    print("Stash:")
-    print(path_oram.stash)
-    print("Done")
 
-    block_id = 1
-    path_oram.access(block_id)
-    print("Accessed block with ID", block_id)
-    print("Position Map:")
-    path_oram.position_map.print_position_map()
-    print("Bucket Tree:")
-    path_oram.bucket_tree.print_tree()
-    print("Stash:")
-    print(path_oram.stash)
-    print("Done")
+    warmup_access_number = 50_000  # 3 million warm-up accesses
+    simulation_access_number = 50_000  # At least 3 million simulation accesses
+    total_accesses = warmup_access_number + simulation_access_number
+
+    stash_size_map : List[int] = [0] * (N_BLOCKS_NUMBER + 1)
+
+    # Warm-up phase
+    print("Starting warm-up phase...")
+    for i in tqdm(range(warmup_access_number), desc="Warming up", unit="iteration"):
+        block_id = i % N_BLOCKS_NUMBER
+        output_block = path_oram.access(block_id, isWrite=True, new_data=block_id)
+
+    max_stash_size : int = 0
+    s : List[int] = [0] * (N_BLOCKS_NUMBER + 1)
+
+    # Simulation phase (Data Collection)
+    print("Starting simulation phase...")
+    for i in tqdm(range(simulation_access_number), desc="Simulating", unit="iteration"):
+        block_id = i % N_BLOCKS_NUMBER
+        output_block = path_oram.access(block_id, isWrite=False, new_data=block_id)
+        current_stash_size = len(path_oram.stash)
+        max_stash_size = max(max_stash_size, current_stash_size)
+        # counts the number of accesses with a given stash size
+        stash_size_map[current_stash_size] = stash_size_map[current_stash_size] + 1
+
+    # compute s_i
+    for i in range(max_stash_size):
+        for j in range(i, max_stash_size):
+            s[i] = s[i] + stash_size_map[j]
+
+    # Write data to text file
+    output_filename = "oram_stash_data.txt"
+    with open(output_filename, "w") as f:
+        # First line: -1,s
+        f.write(f"-1,{simulation_access_number}\n")
+        # Subsequent lines: i,s_i
+        for i in range(max_stash_size + 1):
+            s_i = stash_size_map[i]
+            f.write(f"{i},{s_i}\n")
+
+    print(f"Data collection complete. Results written to {output_filename}.")
+
+    # Optionally, print final stash statistics
+    print("Final Stash Size:", len(path_oram.stash))
+    print("Percentage of blocks in the stash:", len(path_oram.stash) / N_BLOCKS_NUMBER * 100)
+
