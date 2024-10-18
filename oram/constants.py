@@ -1,2 +1,2 @@
-N_BLOCKS_NUMBER = pow(2, 8)
+N_BLOCKS_NUMBER = pow(2, 15)
 Z_BUCKET_SIZE = 4

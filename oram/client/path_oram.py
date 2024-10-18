@@ -1,6 +1,7 @@
 import random as rand
-from typing import List, Dict
-
+import matplotlib.pyplot as plt
+import numpy as np
+from typing import List
 from tqdm import tqdm
 from collections.abc import Mapping
 from oram.client.position_map import PositionMap
@@ -102,8 +103,8 @@ class PathORAM():
 if __name__ == "__main__":
     path_oram = PathORAM()
 
-    warmup_access_number = 50_000  # 3 million warm-up accesses
-    simulation_access_number = 50_000  # At least 3 million simulation accesses
+    warmup_access_number = 100_000  # 3 million warm-up accesses
+    simulation_access_number = 100_000  # At least 3 million simulation accesses
     total_accesses = warmup_access_number + simulation_access_number
 
     stash_size_map : List[int] = [0] * (N_BLOCKS_NUMBER + 1)
@@ -127,24 +128,62 @@ if __name__ == "__main__":
         # counts the number of accesses with a given stash size
         stash_size_map[current_stash_size] = stash_size_map[current_stash_size] + 1
 
-    # compute s_i
-    for i in range(max_stash_size):
-        for j in range(i, max_stash_size):
-            s[i] = s[i] + stash_size_map[j]
+    # ... [Your existing code up to data collection] ...
+
+    # Compute s_i (the cumulative counts of stash sizes ≥ i)
+    s = [0] * (max_stash_size + 1)
+    for i in range(max_stash_size + 1):
+        s[i] = sum(stash_size_map[i:])
 
     # Write data to text file
     output_filename = "oram_stash_data.txt"
     with open(output_filename, "w") as f:
-        # First line: -1,s
+        # First line: -1, total number of simulation accesses
         f.write(f"-1,{simulation_access_number}\n")
-        # Subsequent lines: i,s_i
+        # Subsequent lines: i, s_i
         for i in range(max_stash_size + 1):
-            s_i = stash_size_map[i]
-            f.write(f"{i},{s_i}\n")
+            f.write(f"{i},{s[i]}\n")
 
     print(f"Data collection complete. Results written to {output_filename}.")
+
+    # Compute probabilities (excluding the stash size of 0)
+    prob = [(s_i / simulation_access_number) * 100 for s_i in s[1:]]
+
+    # Create the range for the X-axis (from 1 to max_stash_size)
+    x_values = np.arange(1, max_stash_size + 1)
+
+    # Create bar plot with specified probabilities
+    bars = plt.bar(x_values, prob, color='blue', edgecolor='black')
+
+    # Set x-axis ticks to be integers
+    plt.xticks(x_values)
+
+    # Add percentage labels on top of each bar
+    for bar, percentage in zip(bars, prob):
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            height + 0.5,  # Adjust the position slightly above the bar
+            f'{percentage:.2f}%',
+            ha='center',
+            va='bottom',
+            fontsize=8
+        )
+
+    # Add title and labels
+    plt.title(f'PORAM Simulation for Z={Z_BUCKET_SIZE}')
+    plt.xlabel('Required Stash Size')
+    plt.ylabel('P[Stash Size ≥ Required Stash Size] (%)')
+
+    # Adjust layout to prevent clipping of ylabel
+    plt.tight_layout()
+
+    # Save the histogram as an image
+    plt.savefig('histogram_image.png')
+
+    # Show the plot
+    plt.show()
 
     # Optionally, print final stash statistics
     print("Final Stash Size:", len(path_oram.stash))
     print("Percentage of blocks in the stash:", len(path_oram.stash) / N_BLOCKS_NUMBER * 100)
-
