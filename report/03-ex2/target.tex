@@ -1,2 +1,29 @@
-\section{}
+\section{Homomorphic Encryption over the Integers}
 
+\subsection{Encrypting a bit vector}
+
+We encrypted the bit vector provided in the assignment and added the resulting ciphertexts to the \texttt{swhe-task1.json} file. The ensure the correct way of encryption we made sure to use the quotient and modulo functions as defined in the scheme and described in the assignment text. Below you can find the resulting ciphertexts, each belonging to a bit message.
+
+\subsection{Number of supported operations}
+
+We tested the possible number of operations (homomorphic XOR and AND) for each ciphertext, using the provided parameters for the scheme. The reason behind the significant difference between the number of supported XOR and AND operations lies in the way these operations are implemented. Since XOR is implemented as integer addition, the generated noise during this operation accumulates way more slowly than iin the case of the AND operation which is implemented via integer multiplication (in both cases a $mod x\textsubscript{0}$ operation is also performed to decrease the generated noise). Because of this we were expecting similar results but it was interesting to see the actual numbers, as the difference is multiple orders of magnitude.
+
+Following you can find the results for the number of supported operations.
+
+\begin{verbatim}
+Ciphertext 1 (Noise Bitlength: 1) supports:
+  XOR operations: 40701
+  AND operations: 5
+Ciphertext 2 (Noise Bitlength: 3) supports:
+  XOR operations: 105669
+  AND operations: 3
+Ciphertext 3 (Noise Bitlength: 5) supports:
+  XOR operations: 12728
+  AND operations: 1
+Ciphertext 4 (Noise Bitlength: 7) supports:
+  XOR operations: 62678
+  AND operations: 2
+Ciphertext 5 (Noise Bitlength: 9) supports:
+  XOR operations: 75964
+  AND operations: 1
+\end{verbatim}
