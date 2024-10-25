@@ -104,7 +104,7 @@ if __name__ == "__main__":
     path_oram = PathORAM()
 
     warmup_access_number = 100_000  # 3 million warm-up accesses
-    simulation_access_number = 100_000  # At least 3 million simulation accesses
+    simulation_access_number = 1024  # At least 3 million simulation accesses
     total_accesses = warmup_access_number + simulation_access_number
 
     stash_size_map : List[int] = [0] * (N_BLOCKS_NUMBER + 1)
@@ -123,12 +123,11 @@ if __name__ == "__main__":
     for i in tqdm(range(simulation_access_number), desc="Simulating", unit="iteration"):
         block_id = i % N_BLOCKS_NUMBER
         output_block = path_oram.access(block_id, isWrite=False, new_data=block_id)
+        print(output_block)
         current_stash_size = len(path_oram.stash)
         max_stash_size = max(max_stash_size, current_stash_size)
         # counts the number of accesses with a given stash size
         stash_size_map[current_stash_size] = stash_size_map[current_stash_size] + 1
-
-    # ... [Your existing code up to data collection] ...
 
     # Compute s_i (the cumulative counts of stash sizes ≥ i)
     s = [0] * (max_stash_size + 1)

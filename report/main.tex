@@ -1,0 +1,123 @@
+%%%%%%%% Sample LaTeX input for Complex Systems %%%%%%%%%%% 
+% Revision 4, Jun 27, 2018
+%
+% This is a LaTeX input file  
+% Text following % on a particular line is treated as a comment, and 
+% ignored by LaTeX.  
+% You do not need to type any text that follows a % 
+% 
+\documentclass[10pt]{article}
+
+\usepackage[a4paper, margin=1.5in]{geometry}
+\usepackage{float}
+
+\usepackage{epsf,hyperref}
+\usepackage{amssymb,ComplexSystems}
+\usepackage{lmodern}  % Improved font for better scalability
+
+% Font Encoding and Input
+\usepackage[T1]{fontenc}  % Updated to use T1 encoding for better font rendering
+\usepackage[utf8]{inputenc}  % Use utf8 instead of utf8x for better compatibility
+
+% Language
+\usepackage[english]{babel}
+
+\usepackage{amsmath}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Code Listings
+\usepackage{listings}
+\usepackage{color}
+\usepackage[table,xcdraw]{xcolor}
+
+% Graphics and Figures
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{subcaption}
+\usepackage{caption}
+
+% Clever References
+\usepackage{cleveref}
+
+\usepackage{calrsfs}
+\DeclareMathAlphabet{\pazocal}{OMS}{zplm}{m}{n}
+\newcommand{\La}{\mathcal{L}}
+\newcommand{\Lb}{\pazocal{L}}
+
+% Bibliography
+\usepackage{biblatex}
+\addbibresource{biblio.bib}
+
+\lstset{
+tabsize = 4, %% set tab space width
+showstringspaces = false, %% prevent space marking in strings, string is defined as the text that is generally printed directly to the console
+numbers = left, %% display line numbers on the left
+commentstyle = \color{green}, %% set comment color
+keywordstyle = \color{blue}, %% set keyword color
+stringstyle = \color{red}, %% set string color
+rulecolor = \color{black}, %% set frame color to avoid being affected by text color
+basicstyle = \small \ttfamily , %% set listing font and size
+breaklines = true, %% enable line breaking
+numberstyle = \tiny,
+}
+
+% complex-systems.sty is the macro package for Complex Systems.
+% It is available at
+% http://www.complex-systems.com/samples/complex-systems.sty
+% epsf.sty is the preferred graphics import method
+
+\begin{document}
+
+\title{Secure Cloud Computing:\\ {\large ORAM and Homomorphic Encryption}% 
+% Use \\ to indicate line breaks in titles longer than about 
+% 55 characters. 
+%
+}
+
+\author{\authname{Riccardo Gennaro}\\[2pt] 
+% Use \\[2pt] to end the line and add space between author name and affiliation. 
+\authadd{Student ID: 3534219}\\
+\authadd{Group 5}\\
+\and
+\authname{Péter Svelecz}\\[2pt] 
+% Use \\[2pt] to end the line and add space between author name and affiliation. 
+\authadd{Student ID: 3542629}\\
+\authadd{Group 5}\\
+}
+
+% The following specifies the running headings 
+%
+% Each running heading should be less than about 50 characters long. 
+% If necessary, give a shortened version of the title. 
+%
+% Use initials for first and second names. If all author names do not fit, truncate the 
+% list and end with ``et al.''.
+\markboth{Secure Cloud Computing 2024 Assignment 2} 
+{ORAM and Homomorphic Encryption} 
+
+\maketitle
+% End title section
+
+%\begin{abstract}
+%    \input{01-exec_summary/target}
+%\end{abstract}
+
+%\begin{keywords}
+%    Personal Health Record, PHR, Access Control, dCP-ABE
+%\end{keywords}
+
+\input{02-ex1/target}
+\newpage
+\input{03-ex2/target}
+
+
+%%\printbibliography
+
+\end{document}
