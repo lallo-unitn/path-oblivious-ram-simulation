@@ -103,8 +103,8 @@ class PathORAM():
 if __name__ == "__main__":
     path_oram = PathORAM()
 
-    warmup_access_number = 100_000  # 3 million warm-up accesses
-    simulation_access_number = 1024  # At least 3 million simulation accesses
+    warmup_access_number = 50_000
+    simulation_access_number = 50_000
     total_accesses = warmup_access_number + simulation_access_number
 
     stash_size_map : List[int] = [0] * (N_BLOCKS_NUMBER + 1)
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     for i in tqdm(range(simulation_access_number), desc="Simulating", unit="iteration"):
         block_id = i % N_BLOCKS_NUMBER
         output_block = path_oram.access(block_id, isWrite=False, new_data=block_id)
-        print(output_block)
+        #print(output_block)
         current_stash_size = len(path_oram.stash)
         max_stash_size = max(max_stash_size, current_stash_size)
         # counts the number of accesses with a given stash size
@@ -157,32 +157,88 @@ if __name__ == "__main__":
     # Set x-axis ticks to be integers
     plt.xticks(x_values)
 
-    # Add percentage labels on top of each bar
-    for bar, percentage in zip(bars, prob):
-        height = bar.get_height()
-        plt.text(
-            bar.get_x() + bar.get_width() / 2,
-            height + 0.5,  # Adjust the position slightly above the bar
-            f'{percentage:.2f}%',
-            ha='center',
-            va='bottom',
-            fontsize=8
-        )
+    if Z_BUCKET_SIZE >= 4:
 
-    # Add title and labels
-    plt.title(f'PORAM Simulation for Z={Z_BUCKET_SIZE}')
-    plt.xlabel('Required Stash Size')
-    plt.ylabel('P[Stash Size ≥ Required Stash Size] (%)')
+        # Add percentage labels on top of each bar
+        for bar, percentage in zip(bars, prob):
+            height = bar.get_height()
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 0.5,  # Adjust the position slightly above the bar
+                f'{percentage:.2f}%',
+                ha='center',
+                va='bottom',
+                fontsize=8
+            )
 
-    # Adjust layout to prevent clipping of ylabel
-    plt.tight_layout()
+        # Add title and labels
+        plt.title(f'PORAM Simulation for Z={Z_BUCKET_SIZE}')
+        plt.xlabel('Required Stash Size')
+        plt.ylabel('P[Stash Size ≥ Required Stash Size] (%)')
 
-    # Save the histogram as an image
-    plt.savefig('histogram_image.png')
+        # Adjust layout to prevent clipping of ylabel
+        plt.tight_layout()
 
-    # Show the plot
-    plt.show()
+        # Save the histogram as an image
+        plt.savefig('histogram_image.png')
 
-    # Optionally, print final stash statistics
-    print("Final Stash Size:", len(path_oram.stash))
-    print("Percentage of blocks in the stash:", len(path_oram.stash) / N_BLOCKS_NUMBER * 100)
+        # Show the plot
+        plt.show()
+
+        # Optionally, print final stash statistics
+        print("Final Stash Size:", len(path_oram.stash))
+        print("Percentage of blocks in the stash:", len(path_oram.stash) / N_BLOCKS_NUMBER * 100)
+
+    else:
+        # Compute probabilities (excluding the stash size of 0)
+        prob = [(s_i / simulation_access_number) * 100 for s_i in s[1:]]
+
+        # Create the range for the X-axis (from 1 to max_stash_size)
+        x_values = np.arange(1, max_stash_size + 1)
+
+        # Check that x_values and prob have the same length
+        print("Length of x_values:", len(x_values))
+        print("Length of prob:", len(prob))
+
+        # Adjust x-axis ticks to reduce clutter
+        tick_step = 10  # Adjust this value based on your data
+        plt.xticks(np.arange(0, max_stash_size + 1, step=tick_step))
+
+        # Optionally, apply a moving average to smooth the data
+        window_size = 5  # Adjust window size as needed
+        if len(prob) >= window_size:
+            prob_smoothed = np.convolve(prob, np.ones(window_size) / window_size, mode='valid')
+            x_values_smoothed = x_values[:len(prob_smoothed)]
+        else:
+            prob_smoothed = prob
+            x_values_smoothed = x_values
+
+        # Create a larger figure for better readability
+        plt.figure(figsize=(12, 6))
+
+        # Create line plot with specified probabilities
+        plt.plot(x_values_smoothed, prob_smoothed, marker='o', color='blue', linestyle='-')
+
+        # Set x-axis limits to focus on the most relevant data range (optional)
+        # plt.xlim([xmin, xmax])  # Uncomment and set xmin and xmax as needed
+
+        # Add title and labels
+        plt.title(f'PORAM Simulation for Z={Z_BUCKET_SIZE}')
+        plt.xlabel('Required Stash Size')
+        plt.ylabel('P[Stash Size ≥ Required Stash Size] (%)')
+
+        # Add grid lines for better readability
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Adjust layout to prevent clipping of ylabel
+        plt.tight_layout()
+
+        # Save the plot as an image
+        plt.savefig('line_plot_image.png', dpi=300)  # Increase dpi for better quality
+
+        # Show the plot
+        plt.show()
+
+        # Optionally, print max stash statistics
+        print("Max Stash Size:", max_stash_size)
+        print("Percentage of blocks in the stash:", (max_stash_size / N_BLOCKS_NUMBER) * 100)
